@@ -7,4 +7,4 @@ Just set the path for root directory **root_path**, and set the name of input fi
 
 ### Possible Improvement: ###
 * Right now my focus was on **StackingCVRegressor**, it can be improved in order to consider only the best regressors.
-* 
+* Maybe a better preprocessing improves the performance. As is now only zero features has been removed and a normalization has been performed.
