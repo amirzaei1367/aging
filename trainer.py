@@ -17,8 +17,8 @@ from sklearn.externals import joblib
 root_path = './'
 
 in_file = 'NN_dataset.txt'
-out_file = 'final_results.csv'
-res_file = 'early_results.csv'
+pred_file = 'predictions.csv'
+stat_file = 'statistics.csv'
 
 SEED = 42
 np.random.seed(SEED)
@@ -110,7 +110,7 @@ def train_func():
         joblib.dump(stack, root_path + '{}_{}.pkl'.format(label, i))
 
     results_pd = pd.DataFrame(results)
-    results_pd.to_csv(root_path + res_file)
+    results_pd.to_csv(root_path + stat_file)
 
 def predictor(best_pred = 'StackingClassifier'):
     ## reading the pickle files and add the predictions to it
@@ -135,7 +135,7 @@ def predictor(best_pred = 'StackingClassifier'):
 
     df = df.join(pd.DataFrame(temp))
     df = df.join(df_temp[label_list])
-    df.to_csv(root_path + out_file)
+    df.to_csv(root_path + pred_file)
 
 train_func()
 predictor()
