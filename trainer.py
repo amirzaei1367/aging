@@ -106,12 +106,12 @@ def train_func():
 
             results.append(result.copy())
 
-        joblib.dump(stack, root_path + 'stack_{}.pkl'.format(i))
+        joblib.dump(stack, root_path + '{}_{}.pkl'.format(label, i))
 
     results_pd = pd.DataFrame(results)
     results_pd.to_csv(root_path + res_file)
 
-def predictor():
+def predictor(best_pred = 'StackingClassifier'):
     ## reading the pickle files and add the predictions to it
     df = pd.read_csv(root_path + in_file, index_col='index')
     df.drop(columns=['STA'], axis=1, inplace=True)
@@ -129,7 +129,7 @@ def predictor():
 
     temp = {}
     for i in range(13):
-        stacking = joblib.load(root_path + 'stack_{}.pkl'.format(i))
+        stacking = joblib.load(root_path + '{}_{}.pkl'.format(best_pred, i))
         temp[f'lbl_{i}'] = stacking.predict(df)
 
     df = df.join(pd.DataFrame(temp))
