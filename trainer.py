@@ -84,10 +84,11 @@ def train_func():
 
         ## runing the neural models
         result = {}
-        #     for clf, label in zip([ ridge, lasso, rf, xgb, mlp, stack], ['Ridge', 'Lasso',
-        #                                                                  'Random Forest', 'xgb',
-        #                                                                  'mlp', 'StackingClassifier']):
-        for clf, label in zip([stack], ['StackingClassifier']):
+        
+        for clf, label in zip([ ridge, lasso, rf, xgb, mlp, stack], ['Ridge', 'Lasso',
+                                                                     'Random Forest', 'xgb',
+                                                                     'mlp', 'StackingClassifier']):
+#         for clf, label in zip([stack], ['StackingClassifier']):
             clf.fit(X_train, y_train)
             pred_train = clf.predict(X_train)
             pred_test = clf.predict(X_test)
