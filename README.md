@@ -1,4 +1,6 @@
 # Aging
 
 
-predicting the age of a circuit
+predicting the age of a circuit:
+
+### How it works: ###
