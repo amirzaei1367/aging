@@ -16,12 +16,13 @@ from sklearn.externals import joblib
 ##parameters
 root_path = './'
 
-in_file = 'NN_dataset.txt'
-pred_file = 'predictions.csv'
-stat_file = 'statistics.csv'
+in_file = 'NN_dataset_normalized.txt'
+out_file = 'final_results.csv'
+res_file = 'early_results.csv'
 
 SEED = 42
 np.random.seed(SEED)
+std_th = 1e-2
 
 
 def train_func():
@@ -69,7 +70,16 @@ def train_func():
             col_list.remove(lbl)
         col_list.remove('status')
 
-        data[col_list] = data[col_list].apply(lambda x: (x - x.mean()) / (x.std()))
+        def prep(x):
+            if x.std() < std_th:
+                y = x - x.mean()
+            else:
+                y = (x - x.mean()) / x.std()
+
+            return y.copy()
+
+        # data[col_list] = data[col_list].apply(lambda x: (x - x.mean()) / (x.std()))
+        data[col_list] = data[col_list].apply(lambda x: prep(x))
 
         train, test = train_test_split(data, test_size=0.2, random_state=SEED)
         y_train = train[f'label_{i}']
@@ -84,11 +94,10 @@ def train_func():
 
         ## runing the neural models
         result = {}
-        
-        for clf, label in zip([ ridge, lasso, rf, xgb, mlp, stack], ['Ridge', 'Lasso',
-                                                                     'Random Forest', 'xgb',
-                                                                     'mlp', 'StackingClassifier']):
-#         for clf, label in zip([stack], ['StackingClassifier']):
+        #     for clf, label in zip([ ridge, lasso, rf, xgb, mlp, stack], ['Ridge', 'Lasso',
+        #                                                                  'Random Forest', 'xgb',
+        #                                                                  'mlp', 'StackingClassifier']):
+        for clf, label in zip([stack], ['StackingClassifier']):
             clf.fit(X_train, y_train)
             pred_train = clf.predict(X_train)
             pred_test = clf.predict(X_test)
@@ -107,12 +116,14 @@ def train_func():
 
             results.append(result.copy())
 
-        joblib.dump(stack, root_path + '{}_{}.pkl'.format(label, i))
+        joblib.dump(stack, root_path + 'stack_{}.pkl'.format(i))
 
     results_pd = pd.DataFrame(results)
-    results_pd.to_csv(root_path + stat_file)
+    results_pd.to_csv(root_path + res_file)
 
-def predictor(best_pred = 'StackingClassifier'):
+    return zero_idx
+
+def predictor(zero_idx):
     ## reading the pickle files and add the predictions to it
     df = pd.read_csv(root_path + in_file, index_col='index')
     df.drop(columns=['STA'], axis=1, inplace=True)
@@ -121,21 +132,31 @@ def predictor(best_pred = 'StackingClassifier'):
     label_list.append('status')
 
     df.drop(columns=label_list, axis=1, inplace=True)
-    zero_idx = np.isclose(df.sum(axis=0), 0)
+    # zero_idx = np.isclose(df.sum(axis=0), 0)
     df.drop(columns=list(df.columns[zero_idx]), axis=1, inplace=True)
 
     # temp_df = df[(df['status'] == 'train')]
-    df = df.apply(lambda x: (x - df_temp[(df_temp['status'] == 'train')][x.name].mean()) / (
-        df_temp[(df_temp['status'] == 'train')][x.name].std()))
+    def prep(x, df_temp):
+        if df_temp[(df_temp['status'] == 'train')][x.name].std() < std_th:
+            y = x - df_temp[(df_temp['status'] == 'train')][x.name].mean()
+        else:
+            y = (x - df_temp[(df_temp['status'] == 'train')][x.name].mean()) / (
+                df_temp[(df_temp['status'] == 'train')][x.name].std())
+
+        return y.copy()
+
+    # df = df.apply(lambda x: (x - df_temp[(df_temp['status'] == 'train')][x.name].mean()) / (
+    #     df_temp[(df_temp['status'] == 'train')][x.name].std()))
+    df = df.apply(lambda x: prep(x, df_temp))
 
     temp = {}
     for i in range(13):
-        stacking = joblib.load(root_path + '{}_{}.pkl'.format(best_pred, i))
+        stacking = joblib.load(root_path + 'stack_{}.pkl'.format(i))
         temp[f'lbl_{i}'] = stacking.predict(df)
 
     df = df.join(pd.DataFrame(temp))
     df = df.join(df_temp[label_list])
-    df.to_csv(root_path + pred_file)
+    df.to_csv(root_path + out_file)
 
-train_func()
-predictor()
+zero_idx = train_func()
+predictor(zero_idx)
